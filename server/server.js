@@ -5,20 +5,20 @@ import cors from 'cors';
 
 const app = express();
 
-// Allow cross-origin HTTP requests
+// Enable CORS for incoming HTTP requests
 app.use(cors());
 
 const server = createServer(app);
 
-// Allow Socket.IO connections from Vercel / any domain
+// Enable CORS for Socket.io connections
 const io = new Server(server, {
   cors: {
-    origin: '*', // Allows Vercel and all external domains to connect
+    origin: '*', // Allows Vercel and local dev environments to connect
     methods: ['GET', 'POST'],
   },
 });
 
-// Default test route
+// Default status endpoint
 app.get('/', (req, res) => {
   res.send('Book Nest Backend is Running!');
 });
@@ -58,7 +58,7 @@ io.on('connection', (socket) => {
     socket.rooms.forEach((roomId) => {
       if (roomUsers[roomId]) {
         roomUsers[roomId].delete(socket.id);
-        
+
         io.to(roomId).emit('room-status', { count: roomUsers[roomId].size });
 
         if (roomUsers[roomId].size === 0) {
