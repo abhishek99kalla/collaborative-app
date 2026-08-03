@@ -3,11 +3,8 @@ import { io } from 'socket.io-client';
 import { nanoid } from 'nanoid';
 import pptxgen from 'pptxgenjs';
 
-// Auto-detect production vs local environment
-const BACKEND_URL =
-  process.env.NODE_ENV === 'production'
-    ? 'https://booknest-backend.onrender.com' 
-    : 'http://localhost:3001';
+// Always use your live deployed backend server on Render
+const BACKEND_URL = 'https://booknest-backend.onrender.com';
 
 // Socket connection
 const socket = io(BACKEND_URL, {
