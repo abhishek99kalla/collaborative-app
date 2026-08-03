@@ -4,8 +4,7 @@ import { nanoid } from 'nanoid';
 import pptxgen from 'pptxgenjs';
 
 // Always use your live deployed backend server on Render
-const BACKEND_URL = 'https://booknest-backend.onrender.com';
-
+const BACKEND_URL = 'https://collaborative-app-yihy.onrender.com';
 // Socket connection
 const socket = io(BACKEND_URL, {
   autoConnect: true,
