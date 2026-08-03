@@ -27,7 +27,7 @@ function App() {
   const audioChunksRef = useRef([]);
 
   useEffect(() => {
-    // Check URL query parameters for room link
+    // Read room ID from URL if present
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
     if (roomParam) {
@@ -70,6 +70,10 @@ function App() {
     socket.on('receive-message', onReceiveMessage);
     socket.on('receive-audio-message', onReceiveAudio);
 
+    if (socket.connected) {
+      onConnect();
+    }
+
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
@@ -80,7 +84,7 @@ function App() {
     };
   }, [roomId]);
 
-  // Handle Room Creation
+  // Create Room
   const createRoom = () => {
     const newRoomId = nanoid(8);
     setRoomId(newRoomId);
@@ -89,6 +93,7 @@ function App() {
     socket.emit('join-room', newRoomId);
   };
 
+  // Join Room
   const joinRoom = (e) => {
     e.preventDefault();
     if (roomId.trim()) {
@@ -116,7 +121,7 @@ function App() {
     setInputMessage('');
   };
 
-  // Voice Recording
+  // Voice Note Recording
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -152,7 +157,7 @@ function App() {
     }
   };
 
-  // Export Document Functionality
+  // Export Notes Handler
   const exportDocument = (type) => {
     if (type === 'txt') {
       const element = document.createElement('a');
@@ -166,134 +171,135 @@ function App() {
     }
   };
 
-  // Theme Styles
-  const theme = {
-    bg: isDarkMode ? '#0f172a' : '#f8fafc',
-    cardBg: isDarkMode ? '#1e293b' : '#ffffff',
-    text: isDarkMode ? '#f8fafc' : '#0f172a',
-    border: isDarkMode ? '#334155' : '#e2e8f0',
-    primary: '#6366f1',
-  };
-
   return (
-    <div style={{ backgroundColor: theme.bg, color: theme.text, minHeight: '100vh', transition: 'all 0.3s ease', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className={`min-h-screen ${isDarkMode ? 'bg-[#0b0f19] text-white' : 'bg-gray-100 text-gray-900'} font-sans transition-colors duration-300`}>
       
-      {/* Top Navigation Bar */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 2rem', borderBottom: `1px solid ${theme.border}`, backgroundColor: theme.cardBg }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700' }}>📚 Collaborative Workspace</h1>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {/* Connection Status Badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
-            <span style={{ height: '10px', width: '10px', borderRadius: '50%', backgroundColor: isConnected ? '#22c55e' : '#ef4444' }} />
-            <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
+      {/* Top Header Bar */}
+      <header className="flex justify-between items-center px-8 py-4 bg-[#111827] border-b border-gray-800 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1">
+            <span className="w-3 h-3 rounded-sm bg-red-400"></span>
+            <span className="w-3 h-3 rounded-sm bg-green-400"></span>
+            <span className="w-3 h-3 rounded-sm bg-blue-400"></span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight">Collaborative Workspace</h1>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm text-gray-300 bg-gray-800/50 px-3 py-1.5 rounded-full border border-gray-700">
+            <span className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+            <span>{isConnected ? 'Connected' : 'Connecting...'}</span>
           </div>
 
-          {/* Theme Toggle Button */}
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
-            style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: `1px solid ${theme.border}`, background: 'transparent', color: theme.text, cursor: 'pointer' }}
+            className="px-3 py-1.5 text-sm rounded-lg border border-gray-700 bg-gray-800 hover:bg-gray-700 transition"
           >
             {isDarkMode ? '☀️ Light' : '🌙 Dark'}
           </button>
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Container */}
       {!inRoom ? (
-        /* Lobby Screen */
-        <main style={{ maxWidth: '400px', margin: '4rem auto', padding: '2rem', backgroundColor: theme.cardBg, borderRadius: '0.75rem', border: `1px solid ${theme.border}`, textAlign: 'center' }}>
-          <h2 style={{ marginTop: 0 }}>Join a Workspace</h2>
+        <main className="max-w-md mx-auto mt-20 p-8 bg-[#1f293d] rounded-2xl border border-gray-800 shadow-xl text-center">
+          <h2 className="text-2xl font-bold mb-6">Join a Workspace</h2>
           <button
             onClick={createRoom}
-            style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: 'none', backgroundColor: theme.primary, color: '#fff', fontWeight: 'bold', cursor: 'pointer', marginBottom: '1rem' }}
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 font-semibold rounded-xl transition shadow-lg mb-4"
           >
             Create New Room
           </button>
-          <div style={{ margin: '1rem 0', color: '#64748b' }}>or</div>
-          <form onSubmit={joinRoom} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div className="text-gray-400 text-sm my-3">or join with code</div>
+          <form onSubmit={joinRoom} className="flex flex-col gap-3">
             <input
               type="text"
               placeholder="Enter Room Code..."
               value={roomId}
               onChange={(e) => setRoomId(e.target.value)}
-              style={{ padding: '0.75rem', borderRadius: '0.5rem', border: `1px solid ${theme.border}`, backgroundColor: theme.bg, color: theme.text }}
+              className="p-3 rounded-xl bg-[#111827] border border-gray-700 text-white focus:outline-none focus:border-indigo-500"
             />
             <button
               type="submit"
-              style={{ padding: '0.75rem', borderRadius: '0.5rem', border: `1px solid ${theme.border}`, background: 'transparent', color: theme.text, cursor: 'pointer' }}
+              className="py-3 rounded-xl border border-gray-700 bg-gray-800 hover:bg-gray-700 transition font-medium"
             >
               Join Private Session
             </button>
           </form>
         </main>
       ) : (
-        /* Workspace Editor & Chat Layout */
-        <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+        <main className="max-w-7xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Document Section */}
-          <section style={{ backgroundColor: theme.cardBg, padding: '1.5rem', borderRadius: '0.75rem', border: `1px solid ${theme.border}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Shared Notes</h2>
-                <small style={{ color: '#64748b' }}>Room: {roomId} ({userCount} active {userCount > 1 ? 'users' : 'user'})</small>
+          {/* Shared Notes Card */}
+          <section className="md:col-span-2 bg-[#1f293d] p-6 rounded-2xl border border-gray-800/80 shadow-lg flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-xl font-bold">Shared Notes</h2>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Room: <span className="font-mono text-gray-300">{roomId}</span> ({userCount} active user{userCount > 1 ? 's' : ''})
+                  </p>
+                </div>
+
+                <select
+                  onChange={(e) => e.target.value && exportDocument(e.target.value)}
+                  defaultValue=""
+                  className="bg-[#111827] text-sm text-gray-300 border border-gray-700 rounded-lg px-3 py-1.5 focus:outline-none"
+                >
+                  <option value="" disabled>Export Notes</option>
+                  <option value="txt">Export as .TXT</option>
+                  <option value="pdf">Export as PDF</option>
+                  <option value="png">Export as Image (PNG)</option>
+                </select>
               </div>
 
-              {/* Export Dropdown */}
-              <select
-                onChange={(e) => e.target.value && exportDocument(e.target.value)}
-                defaultValue=""
-                style={{ padding: '0.5rem', borderRadius: '0.375rem', border: `1px solid ${theme.border}`, backgroundColor: theme.bg, color: theme.text }}
-              >
-                <option value="" disabled>Export Notes</option>
-                <option value="txt">Export as .TXT</option>
-                <option value="pdf">Export as PDF</option>
-                <option value="png">Export as Image (PNG)</option>
-              </select>
+              <textarea
+                value={documentContent}
+                onChange={handleDocChange}
+                placeholder="Start typing your collaborative notes live..."
+                className="w-full h-96 p-4 rounded-xl bg-[#111827] border border-gray-700 text-gray-200 font-mono text-sm leading-relaxed focus:outline-none focus:border-indigo-500 resize-none"
+              />
             </div>
-
-            <textarea
-              value={documentContent}
-              onChange={handleDocChange}
-              placeholder="Start typing your collaborative notes live..."
-              style={{ width: '96%', height: '400px', padding: '1rem', borderRadius: '0.5rem', border: `1px solid ${theme.border}`, backgroundColor: theme.bg, color: theme.text, fontSize: '1rem', lineHeight: '1.5', resize: 'vertical' }}
-            />
           </section>
 
-          {/* Chat & Voice Section */}
-          <section style={{ backgroundColor: theme.cardBg, padding: '1.5rem', borderRadius: '0.75rem', border: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', height: '500px' }}>
-            <h2 style={{ marginTop: 0, fontSize: '1.25rem', marginBottom: '1rem' }}>Live Discussion</h2>
-            
-            {/* Messages Feed */}
-            <div style={{ flex: 1, overflowY: 'auto', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {/* Live Discussion Card */}
+          <section className="bg-[#1f293d] p-6 rounded-2xl border border-gray-800/80 shadow-lg flex flex-col h-[520px]">
+            <h2 className="text-xl font-bold mb-4">Live Discussion</h2>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4">
               {messages.map((msg, idx) => (
-                <div key={idx} style={{ padding: '0.5rem 0.75rem', borderRadius: '0.5rem', backgroundColor: theme.bg, border: `1px solid ${theme.border}` }}>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>{msg.sender} • {msg.time}</div>
-                  {msg.text && <div>{msg.text}</div>}
-                  {msg.audio && <audio controls src={msg.audio} style={{ width: '100%', marginTop: '0.25rem' }} />}
+                <div key={idx} className="bg-[#111827] p-3 rounded-xl border border-gray-800">
+                  <div className="text-[10px] text-gray-400 mb-1">{msg.sender} • {msg.time}</div>
+                  {msg.text && <p className="text-sm text-gray-200">{msg.text}</p>}
+                  {msg.audio && <audio controls src={msg.audio} className="w-full mt-2 h-8" />}
                 </div>
               ))}
             </div>
 
-            {/* Input Controls */}
-            <form onSubmit={sendMessage} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <form onSubmit={sendMessage} className="flex gap-2 mb-2">
               <input
                 type="text"
                 placeholder="Type a message..."
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                style={{ flex: 1, padding: '0.5rem', borderRadius: '0.375rem', border: `1px solid ${theme.border}`, backgroundColor: theme.bg, color: theme.text }}
+                className="flex-1 p-2.5 rounded-xl bg-[#111827] border border-gray-700 text-sm text-white focus:outline-none focus:border-indigo-500"
               />
-              <button type="submit" style={{ padding: '0.5rem 1rem', borderRadius: '0.375rem', border: 'none', backgroundColor: theme.primary, color: '#fff', cursor: 'pointer' }}>
+              <button
+                type="submit"
+                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 font-semibold rounded-xl text-sm transition"
+              >
                 Send
               </button>
             </form>
 
-            {/* Voice Recording Control */}
             <button
               type="button"
               onClick={isRecording ? stopRecording : startRecording}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: `1px solid ${isRecording ? '#ef4444' : theme.border}`, backgroundColor: isRecording ? '#ef4444' : 'transparent', color: isRecording ? '#fff' : theme.text, cursor: 'pointer' }}
+              className={`w-full py-2.5 rounded-xl border text-sm font-medium transition ${
+                isRecording 
+                  ? 'bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30' 
+                  : 'bg-[#111827] border-gray-700 text-gray-300 hover:bg-gray-800'
+              }`}
             >
               {isRecording ? '🛑 Stop & Send Voice Note' : '🎙️ Record Voice Note'}
             </button>
